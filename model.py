@@ -1,8 +1,9 @@
-from torch import nn
 import torch
 import torch.nn.functional as F
+from torch import nn
+
+from config import config_dict
 from ppm_tools import ppm_to_frequency
-from CONSTANTS import p1, p2, trn_freq, T
 
 
 # ----- Encoder ----
@@ -34,7 +35,7 @@ class ConvBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, in_chann=2, hidden_dim=64):
+    def __init__(self, in_chann=2, hidden_dim=config_dict['encoder_hidden_dim']):
         super().__init__()
         self.enc_net = nn.Sequential(
             ConvBlock(in_chann, hidden_dim),
@@ -55,14 +56,14 @@ class Encoder(nn.Module):
 
 # ----- Decoder ----
 class Decoder(nn.Module):
-    def __init__(self, n_heads=48, device='cpu'):
+    def __init__(self, n_heads=config_dict['decoder_n_heads'], device='cpu'):
         super().__init__()
         self.n_heads = n_heads  # number of decoder heads
         self.in_proj = nn.Linear(8*64, 4*n_heads)
-        self.f1 = ppm_to_frequency(p1, trn_freq)
-        self.f2 = ppm_to_frequency(p2, trn_freq)
-        self.trn_freq = trn_freq
-        t = self.gen_time_points(length=T, t_step=0.00036, device=device)  # shape: (T, 1)
+        self.f1 = ppm_to_frequency(config_dict['p1'], config_dict['trn_freq'])
+        self.f2 = ppm_to_frequency(config_dict['p2'], config_dict['trn_freq'])
+        self.trn_freq = config_dict['trn_freq']
+        t = self.gen_time_points(length=config_dict['T'], t_step=0.00036, device=device)  # shape: (T, 1)
         self.register_buffer('t', t)
 
     def vec_gauss(self, t, params):

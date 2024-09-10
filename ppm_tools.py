@@ -1,5 +1,7 @@
 import numpy as np
 
+from config import config_dict
+
 
 def ppm_to_frequency(ppm_values, trn_freq, center_freq=4.7):
     """
@@ -23,7 +25,7 @@ def ppm_to_frequency(ppm_values, trn_freq, center_freq=4.7):
         return np.array([convert(ppm) for ppm in ppm_values])
 
 
-def ppm_to_point_index(ppm_values, T, t_step, trn_freq, center_freq=4.7):
+def ppm_to_point_index(ppm_values, T=config_dict['T'], t_step=config_dict['t_step'], trn_freq=config_dict['trn_freq'], center_freq=config_dict['center_freq']):
     """
     Convert ppm values to corresponding point indexes in an MRS signal.
 
@@ -37,10 +39,16 @@ def ppm_to_point_index(ppm_values, T, t_step, trn_freq, center_freq=4.7):
     Returns:
     int or np.array: Point index(es) corresponding to the input ppm value(s)
     """
-    freqs = np.fft.fftshift(np.fft.fftfreq(T, d=t_step))
+    freqs = np.fft.fftshift(np.fft.fftfreq(T, d=config_dict['t_step']))
     ppm_axis = center_freq - (freqs / trn_freq)
 
     if np.isscalar(ppm_values):
         return np.argmin(np.abs(ppm_axis - ppm_values))
     else:
         return np.array([np.argmin(np.abs(ppm_axis - ppm)) for ppm in ppm_values])
+
+
+def point_to_ppm(T=config_dict['T'], trn_freq=config_dict['trn_freq'], t_step=config_dict['t_step'], center_freq=config_dict['center_freq']):
+    freqs = np.fft.fftshift(np.fft.fftfreq(T, d=t_step), axes=0)
+    ppm = freqs / trn_freq
+    return center_freq - ppm
