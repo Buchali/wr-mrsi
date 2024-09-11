@@ -8,7 +8,7 @@ from torch import nn
 
 from config import config_dict
 from constants import TRAIN_SAMPLE_FILENAME, TRAIN_SAMPLE_URL
-from data_utils import create_loaders, load_data
+from data_utils import create_loaders, download_data
 from model import AutoEncoder
 from ppm_tools import ppm_to_point_index
 from utils import (filter_low_power, normalize, plot_dual_freq, plot_timefreq,
@@ -38,7 +38,7 @@ wr_freq_range = slice(ppm_to_point_index(p2, T, t_step, trn_freq), ppm_to_point_
 plt_freq_range = slice(ppm_to_point_index(7, T, t_step, trn_freq), ppm_to_point_index(1, T, t_step, trn_freq))  # water removal frequency range.
 
 # load and preprocess
-z = load_data(TRAIN_SAMPLE_FILENAME, TRAIN_SAMPLE_URL)
+z = download_data(TRAIN_SAMPLE_FILENAME, TRAIN_SAMPLE_URL)
 z_normalized = normalize(z[:T])
 # plot_timefreq(z_normalized.T)
 z_filtered = filter_low_power(z_normalized)
@@ -66,7 +66,7 @@ def get_lr(step, max_lr=1e-2, min_lr=1e-4, warmup_epochs=5, max_epochs=100):
     return min_lr + coeff * (max_lr - min_lr)
 
 opt = autoencoder.configure_optimizer()
-autoencoder, optimizer, start_epoch = load_checkpoint(model=autoencoder, optimizer=opt)
+autoencoder, optimizer, start_epoch = load_checkpoint(model=autoencoder, optimizer=opt, device)
 
 def validate():
     with torch.no_grad():
@@ -138,4 +138,4 @@ for epoch in tqdm(range(start_epoch, training_epochs)):
             # save checkpoint
             # -----------------
             save_checkpoint(autoencoder, opt, config_dict, epoch=epoch)
-    break
+    # break

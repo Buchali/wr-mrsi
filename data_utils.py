@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset, random_split
 
 
-def load_data(file_name, url):
+def download_data(file_name, url):
     data_dir = Path('data')
     if not data_dir.exists():
         data_dir.mkdir(parents=True, exist_ok=True)
@@ -16,6 +16,16 @@ def load_data(file_name, url):
     else:
         print(f'File {file_name} already exists in /data dir! (please remove it to re-download)')
     return np.load(file_path).T
+
+
+def load_data(file_names, urls):
+    test_data_list = []
+    for i, file_name in enumerate(file_names):
+        test_data = download_data(file_name, urls[i])
+        test_data_list.append(test_data.T)
+
+    test_data = np.vstack(test_data_list)
+    return test_data
 
 
 class CustomDataset(Dataset):

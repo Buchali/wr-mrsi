@@ -10,14 +10,17 @@ from config import config_dict
 from ppm_tools import point_to_ppm
 
 
-def normalize(z):
+def normalize(z,  return_base_values=False, r_base=None):
     # polar representation
     r = np.abs(z)
     ang = np.angle(z)
 
-    r_base = np.amax(r, axis=0)
+    if r_base is None:
+        r_base = np.amax(r, axis=0)
     r_normalized = r / r_base
     z_normalized = r_normalized * np.exp(1j * ang)
+    if return_base_values:
+        return z_normalized.T, r_base
     return z_normalized.T
 
     ## if phase correction is needed:
@@ -101,7 +104,7 @@ def save_checkpoint(model, optimizer, config, epoch, checkpoint_path=Path("check
     filename = Path(checkpoint_path/f"checkpoint_epoch{epoch}_{today_str}.pth")
     torch.save(checkpoint, filename)
 
-def load_checkpoint(model, optimizer, checkpoint_path=Path("checkpoints")):
+def load_checkpoint(model, optimizer, checkpoint_path=Path("checkpoints"), device='cpu'):
     if not checkpoint_path.exists():
         return model, optimizer, 0
     # Load checkpoint
@@ -118,7 +121,7 @@ def load_checkpoint(model, optimizer, checkpoint_path=Path("checkpoints")):
         return highest_epoch_file
 
     print(get_filename_with_highest_epoch(checkpoint_path))
-    checkpoint = torch.load(get_filename_with_highest_epoch(checkpoint_path))
+    checkpoint = torch.load(get_filename_with_highest_epoch(checkpoint_path), map_location=torch.device(device))
     # Restore model and optimizer states
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -126,3 +129,20 @@ def load_checkpoint(model, optimizer, checkpoint_path=Path("checkpoints")):
     config = checkpoint['config']
     epoch = config.get('cur_epoch', None)
     return model, optimizer, epoch
+
+
+def compare_plot(wr_dl, wr_svd, plt_freq_range, org_data=None):
+    ppm = point_to_ppm(config_dict['T'])
+    fig, ax = plt.subplots(figsize=(10, 5))
+    wr_dl = wr_dl.cpu()
+    wr_svd = wr_svd.cpu()
+    ax.plot(ppm[plt_freq_range], wr_svd[plt_freq_range], label='wr-SVD')
+    ax.plot(ppm[plt_freq_range], wr_dl[plt_freq_range], label='wr-DL')
+    if org_data is not None:
+        ax.plot(ppm[plt_freq_range], org_data[plt_freq_range], label='org-data')
+
+    ax.invert_xaxis()
+    ax.legend()
+    ax.set_xlabel('Freq (ppm)')
+    ax.set_ylabel('Real')
+    plt.show()
