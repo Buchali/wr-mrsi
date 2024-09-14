@@ -30,9 +30,9 @@ def normalize(z,  return_base_values=False, r_base=None):
     # return z_shifted.T
 
 
-def filter_low_power(z):
+def filter_low_power(z, order=6):
     powers = np.mean(abs(z), axis=-1)
-    threshold = np.median(powers)/6
+    threshold = np.median(powers) / order
     true_indexes = np.where(powers >= threshold)[0]
     print(len(true_indexes))
     return z[true_indexes]

@@ -44,7 +44,7 @@ z_normalized = normalize(z[:T])
 z_filtered = filter_low_power(z_normalized)
 
 # split data and create dataloaders
-z = torch.tensor(z_filtered)
+z = torch.tensor(z_filtered).to(device)
 train_dataloader, val_dataloader, test_dataloader = create_loaders(z, batch_size=batch_size)
 
 # create the model
@@ -66,7 +66,7 @@ def get_lr(step, max_lr=1e-2, min_lr=1e-4, warmup_epochs=5, max_epochs=100):
     return min_lr + coeff * (max_lr - min_lr)
 
 opt = autoencoder.configure_optimizer()
-autoencoder, optimizer, start_epoch = load_checkpoint(model=autoencoder, optimizer=opt, device)
+autoencoder, optimizer, start_epoch = load_checkpoint(model=autoencoder, optimizer=opt, device=device)
 
 def validate():
     with torch.no_grad():
