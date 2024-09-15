@@ -98,14 +98,14 @@ def save_checkpoint(model, optimizer, config, epoch, checkpoint_path=Path("check
     }
     today_str = datetime.today().strftime('%Y-%m-%d')
     # Check if the directory exists
-    if not checkpoint_path.exists():
+    if not checkpoint_path.is_dir():
         # Create the directory
         checkpoint_path.mkdir(parents=True, exist_ok=True)
     filename = Path(checkpoint_path/f"checkpoint_epoch{epoch}_{today_str}.pth")
     torch.save(checkpoint, filename)
 
 def load_checkpoint(model, optimizer, checkpoint_path=Path("checkpoints"), device='cpu'):
-    if not checkpoint_path.exists():
+    if not checkpoint_path.is_dir() or not any(checkpoint_path.glob("*.pth")):
         return model, optimizer, 0
     # Load checkpoint
 
@@ -127,7 +127,7 @@ def load_checkpoint(model, optimizer, checkpoint_path=Path("checkpoints"), devic
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     # Restore configuration and epoch
     config = checkpoint['config']
-    epoch = config.get('cur_epoch', None)
+    epoch = config.get('cur_epoch', 0)
     return model, optimizer, epoch
 
 

@@ -44,18 +44,6 @@ class CustomDataset(Dataset):
         return x
 
 
-def create_datasets(z, ratio=[0.8, 0.1, 0.1], generator=torch.manual_seed(42)):
+def create_datasets(z, ratio=[0.9, 0.1], generator=torch.manual_seed(42)):
     dataset = CustomDataset(z)
-    train_dataset, val_dataset, test_dataset = random_split(dataset=dataset, lengths=ratio, generator=generator)
-    return train_dataset, val_dataset, test_dataset
-
-
-def create_loaders(z, batch_size=512, generator=torch.manual_seed(42)):
-    train_dataset, val_dataset, test_dataset = create_datasets(z)
-    val_size = len(val_dataset)
-    test_size = len(test_dataset)
-
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, generator=generator)
-    val_dataloader = DataLoader(val_dataset, batch_size=val_size, shuffle=False, generator=generator)
-    test_dataloader = DataLoader(test_dataset, batch_size=test_size, shuffle=False, generator=generator)
-    return train_dataloader, val_dataloader, test_dataloader
+    return random_split(dataset=dataset, lengths=ratio, generator=generator)

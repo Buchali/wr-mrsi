@@ -8,6 +8,6 @@ config_dict = {
     'batch_size': 512,
     'encoder_hidden_dim': 64,
     'decoder_n_heads': 48,
-    'training_epochs': 501,
-    'training_report_step': 20
+    'max_training_epochs': 501,
+    'training_report_epoch': 20
 }
