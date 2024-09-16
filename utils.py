@@ -10,6 +10,7 @@ from config import config_dict
 from ppm_tools import point_to_ppm
 
 
+
 def normalize(z,  return_base_values=False, r_base=None):
     # polar representation
     r = np.abs(z)
@@ -34,29 +35,25 @@ def filter_low_power(z, order=6):
     powers = np.mean(abs(z), axis=-1)
     threshold = np.median(powers) / order
     true_indexes = np.where(powers >= threshold)[0]
-    print(len(true_indexes))
+    print("num filtered samples:", len(z) - len(true_indexes))
     return z[true_indexes]
 
 
-def plot_timefreq(z):
-    N, T = z.shape
+def plot_freq(z_f):
+    plt.ioff()
+    T = len(z_f)
     # plot mean of signals in time and freq domains.
-    fig, axes = plt.subplots(1, 2, figsize=(20, 3))
+    fig, ax = plt.subplots(1, 1, figsize=(7, 5))
     ppm = point_to_ppm(T)
 
-    # plot in time domain
-    axes[0].plot(np.real(z.mean(axis=-1)), linewidth=2)
-
     # plot in freq domain
-    z_mean_f = (np.real(np.fft.fftshift(np.fft.fft(z, axis=0), axes=0))).mean(axis=-1)  # [plt_freq_range]
-    axes[1].plot(ppm, z_mean_f, linewidth=2)
-    axes[1].invert_xaxis()
-    axes[1].grid(True)
+    ax.plot(ppm, z_f, linewidth=1.5)
+    ax.invert_xaxis()
 
-    axes[0].set_xlabel('Time Domain')
-    axes[1].set_xlabel('Freq Domain')
-    axes[0].set_ylabel('Real')
+    ax.set_xlabel('Freq (ppm)')
+    ax.set_ylabel('Intencity (real)')
 
+    plt.ion()
     plt.show()
 
 
@@ -89,46 +86,57 @@ def plot_dual_freq(z_f, z_rec_f, plt_freq_range):
 
     plt.show()
 
-def save_checkpoint(model, optimizer, config, epoch, checkpoint_path=Path("checkpoints")):
+def save_checkpoint(model, optimizer, config, epoch, checkpoint_dir='checkpoints/training', ex=''):
+    # Check if the directory exists
+    checkpoint_dir = Path(checkpoint_dir)
+    if not checkpoint_dir.is_dir():
+        # Create the directory
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
     config['cur_epoch'] = epoch
     checkpoint = {
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'config': config,
     }
-    today_str = datetime.today().strftime('%Y-%m-%d')
-    # Check if the directory exists
-    if not checkpoint_path.is_dir():
-        # Create the directory
-        checkpoint_path.mkdir(parents=True, exist_ok=True)
-    filename = Path(checkpoint_path/f"checkpoint_epoch{epoch}_{today_str}.pth")
-    torch.save(checkpoint, filename)
+    today_str = datetime.today().strftime('%Y%m%d')
+    
+    checkpoint_path = checkpoint_dir / f"ckpt_ep{epoch}_{today_str}{ex}.pth"
+    torch.save(checkpoint, checkpoint_path)
 
-def load_checkpoint(model, optimizer, checkpoint_path=Path("checkpoints"), device='cpu'):
-    if not checkpoint_path.is_dir() or not any(checkpoint_path.glob("*.pth")):
-        return model, optimizer, 0
+
+def load_checkpoint(model, optimizer, checkpoint_dir='checkpoints/training', file_name=None, device='cpu'):
+    checkpoint_dir = Path(checkpoint_dir)
+    if not checkpoint_dir.is_dir() or not any(checkpoint_dir.glob("*.pth")):
+        raise ValueError(f'No checkpoints available in {checkpoint_dir} path!')
     # Load checkpoint
 
     def get_filename_with_highest_epoch(path):
         # List all files that match the pattern
-        files = list(path.glob('checkpoint_epoch*_*.pth'))
+        files = list(path.glob('ckpt_ep*_*.pth'))
         # Extract the epoch number and find the file with the highest epoch
         highest_epoch_file = max(
             files,
-            key=lambda f: int(re.search(r'checkpoint_epoch(\d+)_', f.name).group(1))
+            key=lambda f: int(re.search(r'ckpt_ep(\d+)_', f.name).group(1))
         ) if files else None
 
         return highest_epoch_file
 
-    print(get_filename_with_highest_epoch(checkpoint_path))
-    checkpoint = torch.load(get_filename_with_highest_epoch(checkpoint_path), map_location=torch.device(device))
+    if file_name is not None:
+        checkpoint_path = checkpoint_dir / file_name
+        if not checkpoint_path.exists():
+            raise ValueError(f'{file_name} does not exist!')
+    else:
+        checkpoint_path = get_filename_with_highest_epoch(checkpoint_dir)
+    
+    print(checkpoint_path)
+    checkpoint = torch.load(checkpoint_path, map_location=torch.device(device), weights_only=False)
     # Restore model and optimizer states
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     # Restore configuration and epoch
     config = checkpoint['config']
-    epoch = config.get('cur_epoch', 0)
-    return model, optimizer, epoch
+    return model, optimizer, config
 
 
 def compare_plot(wr_dl, wr_svd, plt_freq_range, org_data=None):
@@ -144,5 +152,5 @@ def compare_plot(wr_dl, wr_svd, plt_freq_range, org_data=None):
     ax.invert_xaxis()
     ax.legend()
     ax.set_xlabel('Freq (ppm)')
-    ax.set_ylabel('Real')
+    ax.set_ylabel('Intensity (real)')
     plt.show()
