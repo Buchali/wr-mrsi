@@ -43,5 +43,4 @@ def test(autoencoder, test_dataloader, device='cpu'):
         z_test_res_f = torch.cat(z_res_list, dim=0)
         print(f"test_time: {t2 - t1}")
         print(f'test loss: {loss:.4f}')
-        print(z_test_res_f.shape)
         return z_test_res_f

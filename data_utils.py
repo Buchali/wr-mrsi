@@ -1,31 +1,34 @@
 from pathlib import Path
 
-import gdown
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset, random_split
+from torch.utils.data import Dataset, random_split
 
 
-def download_data(file_name, url):
-    data_dir = Path('data')
-    if not data_dir.exists():
-        data_dir.mkdir(parents=True, exist_ok=True)
-    file_path =  data_dir / Path(file_name)
-    if not file_path.is_file():
-        gdown.download(url=url, output=str(file_path), fuzzy=True)
-    else:
-        print(f'File {file_name} already exists in /data dir! (please remove it to re-download)')
-    return np.load(file_path).T
+def load_data(sub_list: list, data_dir='data'):
+    data_dir = Path(data_dir)
+    data_list = []
+    for sub_num in sub_list:
+        file_name = Path(f"HC{sub_num:02d}_M01.npy")
+        data_list.append(np.load(data_dir/file_name))
+    data = np.vstack(data_list)
+    return data
 
 
-def load_data(file_names, urls):
-    test_data_list = []
-    for i, file_name in enumerate(file_names):
-        test_data = download_data(file_name, urls[i])
-        test_data_list.append(test_data.T)
-
-    test_data = np.vstack(test_data_list)
-    return test_data
+def select_random_subjects(num_picks=2, num_subjects=12):
+    numbers = np.arange(1, num_subjects + 1)
+    
+    # Ensure num_picks is valid
+    if num_picks > len(numbers):
+        raise ValueError("num_picks cannot be greater than the number of available subjects.")
+    
+    # Select random subjects
+    picked_subjects = np.random.choice(numbers, size=num_picks, replace=False)
+    
+    # Compute the remaining numbers
+    remaining_subjects = np.setdiff1d(numbers, picked_subjects)
+    
+    return picked_subjects.tolist(), remaining_subjects.tolist()
 
 
 class CustomDataset(Dataset):

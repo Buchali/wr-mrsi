@@ -10,7 +10,7 @@ from ppm_tools import ppm_to_point_index
 from utils import load_checkpoint, plot_dual_freq, save_checkpoint
 
 
-def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkpoint=True, device='cpu'):
+def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkpoint=False, device='cpu'):
     # params
     T = config_dict['T']
     p1 = config_dict['p1']
@@ -38,7 +38,8 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
 
     opt = autoencoder.configure_optimizer()
     if use_checkpoint:
-        autoencoder, opt, start_epoch = load_checkpoint(model=autoencoder, optimizer=opt, device=device)
+        autoencoder, opt, config = load_checkpoint(model=autoencoder, optimizer=opt, checkpoint_path='checkpoints/training', device=device)
+        start_epoch = config['cur_epoch']
 
     def validate():
         with torch.no_grad():
@@ -66,8 +67,6 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
     autoencoder.train()
     mse_loss = nn.MSELoss()
 
-    print(start_epoch, max_training_epochs)
-    print(f'number of lineshape is {autoencoder.decoder.n_heads}')
     for epoch in tqdm(range(start_epoch, max_training_epochs)):
         t1 = time.time()
         for z in train_dataloader:
@@ -109,7 +108,6 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
 
                 # save checkpoint
                 # -----------------
-                save_checkpoint(autoencoder, opt, config_dict, epoch=epoch)
+                save_checkpoint(autoencoder, opt, config_dict, epoch=epoch, checkpoint_dir='checkpoints/training')
         # break
-    save_checkpoint(autoencoder, opt, config_dict, epoch=max_training_epochs) # final checkpoint
     return autoencoder, opt
