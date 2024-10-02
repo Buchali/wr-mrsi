@@ -25,7 +25,9 @@ def test(autoencoder, test_dataloader, device='cpu'):
         autoencoder.eval()
         t1 = time.time()
         for z_test in test_dataloader:
+            
             z_test_rec = autoencoder(z_test, verbose=False)
+            
             z_test_f = torch.fft.fftshift(torch.fft.fft(z_test, dim=-1), dim=-1)
             z_test_rec_f = torch.fft.fftshift(torch.fft.fft(z_test_rec, dim=-1), dim=-1)
 

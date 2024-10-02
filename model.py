@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from config import config_dict
 from ppm_tools import ppm_to_frequency
 
 
@@ -35,8 +34,9 @@ class ConvBlock(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, in_chann=2, hidden_dim=config_dict['encoder_hidden_dim']):
+    def __init__(self, config_dict, in_chann=2):
         super().__init__()
+        hidden_dim=config_dict['encoder_hidden_dim']
         self.enc_net = nn.Sequential(
             ConvBlock(in_chann, hidden_dim),
             ConvBlock(hidden_dim, hidden_dim),
@@ -56,15 +56,16 @@ class Encoder(nn.Module):
 
 # ----- Decoder ----
 class Decoder(nn.Module):
-    def __init__(self, n_heads=config_dict['decoder_n_heads'], device='cpu'):
+    def __init__(self, config_dict, device='cuda'):
         super().__init__()
-        self.n_heads = n_heads  # number of decoder heads
-        self.in_proj = nn.Linear(8*64, 4*n_heads)
+        self.n_heads = config_dict['decoder_n_heads']  # number of decoder heads
+        self.in_proj = nn.Linear(8*64, 4*self.n_heads)
         self.f1 = ppm_to_frequency(config_dict['p1'], config_dict['trn_freq'])
         self.f2 = ppm_to_frequency(config_dict['p2'], config_dict['trn_freq'])
         self.trn_freq = config_dict['trn_freq']
         t = self.gen_time_points(length=config_dict['T'], t_step=0.00036, device=device)  # shape: (T, 1)
         self.register_buffer('t', t)
+        self.device = device
 
     def vec_gauss(self, t, params):
         a, f, ph, d = params.transpose(2, 0)
@@ -76,7 +77,7 @@ class Decoder(nn.Module):
         sig = a * torch.exp(2 * torch.pi * f * t * 1j) * torch.exp(ph * 1j) * torch.exp(-1 * d * t)
         return sig.transpose(2, 0)
 
-    def gen_time_points(self, length=512, t_step=0.00036, device='cpu'):
+    def gen_time_points(self, length=512, t_step=0.00036, device='cuda'):
         t = torch.arange(0, length) * t_step
         return t[:, None, None].to(device)
 
@@ -85,7 +86,7 @@ class Decoder(nn.Module):
         latents_copy[:, :, 0, :] = F.softplus(latents[:, :, 0, :])
         latents_copy[:, :, 1, :] = torch.clamp(latents[:, :, 1, :], self.f2, self.f1)
         latents_copy[:, :, 2, :] = torch.clamp(latents[:, :, 2, :], -torch.pi, torch.pi)
-        latents_copy[:, :, 3, :] = torch.clamp(latents[:, :, 3, :], 0, 2*self.trn_freq)
+        latents_copy[:, :, 3, :] = torch.clamp(latents[:, :, 3, :], 0, 1.5*self.trn_freq)
         return latents_copy
 
     def forward(self, latents, verbose=False):
@@ -107,10 +108,10 @@ class Decoder(nn.Module):
 
 # ----- AutoEncoder -----
 class AutoEncoder(nn.Module):
-    def __init__(self, device='cpu'):
+    def __init__(self, config_dict, device='cpu'):
         super().__init__()
-        self.encoder = Encoder().to(device)
-        self.decoder = Decoder(device=device).to(device)
+        self.encoder = Encoder(config_dict=config_dict).to(device)
+        self.decoder = Decoder(config_dict=config_dict, device=device).to(device)
 
         self.apply(self._init_weights)
 
@@ -129,7 +130,7 @@ class AutoEncoder(nn.Module):
             nn.init.kaiming_normal_(m.weight)
             nn.init.zeros_(m.bias)
 
-    def configure_optimizer(self, weight_decay=1e-4, learning_rate=1e-3):
+    def configure_optimizer(self, weight_decay=1e-2, learning_rate=1e-3):
         param_dict = {pn: p for pn, p in self.named_parameters()}
         param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
 
@@ -141,21 +142,22 @@ class AutoEncoder(nn.Module):
             {'params': nodecay_params, 'weight_decay': 0.0},  # no weight decay for biases
         ]
 
-        optimizer = torch.optim.AdamW(optim_groups, weight_decay=1e-2, lr=learning_rate, betas=(0.9, 0.999), eps=1e-8)
+        optimizer = torch.optim.AdamW(optim_groups, weight_decay=weight_decay, lr=learning_rate, betas=(0.9, 0.99), eps=1e-7)
         return optimizer
 
 
 if __name__ == '__main__':
-    encoder = Encoder()
+    from config import config_dict
+    encoder = Encoder(config_dict=config_dict)
     size = (10, 512)
     z = torch.rand(size=size, dtype=torch.complex64)
     latents = encoder(z)
     assert tuple(latents.shape) == size
 
-    decoder = Decoder()
+    decoder = Decoder(config_dict=config_dict, device='cpu')
     z_rec = decoder(latents, verbose=False)
     assert tuple(z_rec.shape) == size
 
-    autoencoder = AutoEncoder()
+    autoencoder = AutoEncoder(config_dict=config_dict, device='cpu')
     z_rec = autoencoder(z)
     assert tuple(z_rec.shape) == size
