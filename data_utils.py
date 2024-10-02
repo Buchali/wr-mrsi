@@ -5,7 +5,8 @@ import torch
 from torch.utils.data import Dataset, random_split
 
 
-def load_data(sub_list: list, data_dir=Path('data')):
+def load_data(sub_list: list, data_dir='data'):
+    data_dir = Path(data_dir)
     data_list = []
     for sub_num in sub_list:
         file_name = Path(f"HC{sub_num:02d}_M01.npy")

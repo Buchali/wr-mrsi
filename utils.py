@@ -10,7 +10,6 @@ from config import config_dict
 from ppm_tools import point_to_ppm
 
 
-
 def normalize(z,  return_base_values=False, r_base=None):
     # polar representation
     r = np.abs(z)
@@ -105,31 +104,30 @@ def save_checkpoint(model, optimizer, config, epoch, checkpoint_dir='checkpoints
     torch.save(checkpoint, checkpoint_path)
 
 
-def load_checkpoint(model, optimizer, checkpoint_dir='checkpoints/training', file_name=None, device='cpu'):
-    checkpoint_dir = Path(checkpoint_dir)
-    if not checkpoint_dir.is_dir() or not any(checkpoint_dir.glob("*.pth")):
-        raise ValueError(f'No checkpoints available in {checkpoint_dir} path!')
-    # Load checkpoint
+def load_checkpoint(model, optimizer, checkpoint_path='checkpoints/training', device='cpu'):
+    checkpoint_path = Path(checkpoint_path)
+    if checkpoint_path.is_dir():
+        checkpoint_dir = Path(checkpoint_path)
+        if not any(checkpoint_dir.glob("*.pth")):
+            raise ValueError(f'No checkpoints available in {checkpoint_dir} path!')
+        # Load checkpoint
 
-    def get_filename_with_highest_epoch(path):
-        # List all files that match the pattern
-        files = list(path.glob('ckpt_ep*_*.pth'))
-        # Extract the epoch number and find the file with the highest epoch
-        highest_epoch_file = max(
-            files,
-            key=lambda f: int(re.search(r'ckpt_ep(\d+)_', f.name).group(1))
-        ) if files else None
+        def get_filename_with_highest_epoch(path):
+            # List all files that match the pattern
+            files = list(path.glob('ckpt_ep*_*.pth'))
+            # Extract the epoch number and find the file with the highest epoch
+            highest_epoch_file = max(
+                files,
+                key=lambda f: int(re.search(r'ckpt_ep(\d+)_', f.name).group(1))
+            ) if files else None
 
-        return highest_epoch_file
-
-    if file_name is not None:
-        checkpoint_path = checkpoint_dir / file_name
-        if not checkpoint_path.exists():
-            raise ValueError(f'{file_name} does not exist!')
-    else:
+            return highest_epoch_file
         checkpoint_path = get_filename_with_highest_epoch(checkpoint_dir)
-    
-    print(checkpoint_path)
+
+    elif not checkpoint_path.is_file() or checkpoint_path.suffix != '.pth':
+        raise ValueError(f'Could Not Find {checkpoint_path}!')
+        
+    print(f'loading checkpoin: {checkpoint_path}')
     checkpoint = torch.load(checkpoint_path, map_location=torch.device(device), weights_only=False)
     # Restore model and optimizer states
     model.load_state_dict(checkpoint['model_state_dict'])

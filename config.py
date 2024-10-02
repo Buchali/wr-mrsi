@@ -5,7 +5,7 @@ config_dict = {
     'center_freq': 4.7,
     'p1': 4.0,
     'p2': 6.0,
-    'batch_size': 512,
+    'batch_size': 4096,
     'encoder_hidden_dim': 64,
     'decoder_n_heads': 48,
     'max_training_epochs': 501,

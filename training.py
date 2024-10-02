@@ -38,7 +38,7 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
 
     opt = autoencoder.configure_optimizer()
     if use_checkpoint:
-        autoencoder, opt, config = load_checkpoint(model=autoencoder, optimizer=opt, checkpoint_dir='checkpoints/training', device=device)
+        autoencoder, opt, config = load_checkpoint(model=autoencoder, optimizer=opt, checkpoint_path='checkpoints/training', device=device)
         start_epoch = config['cur_epoch']
 
     def validate():
