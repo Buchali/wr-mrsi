@@ -39,7 +39,6 @@ def filter_low_power(z, order=6):
 
 
 def plot_freq(z_f):
-    plt.ioff()
     T = len(z_f)
     # plot mean of signals in time and freq domains.
     fig, ax = plt.subplots(1, 1, figsize=(7, 5))
@@ -52,7 +51,6 @@ def plot_freq(z_f):
     ax.set_xlabel('Freq (ppm)')
     ax.set_ylabel('Intencity (real)')
 
-    plt.ion()
     plt.show()
 
 

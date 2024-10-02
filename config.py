@@ -7,7 +7,7 @@ config_dict = {
     'p2': 6.0,
     'batch_size': 4096,
     'encoder_hidden_dim': 64,
-    'decoder_n_heads': 48,
+    'decoder_n_heads': 64,
     'max_training_epochs': 501,
-    'training_report_epoch': 20
+    'training_report_epoch': 50,
 }

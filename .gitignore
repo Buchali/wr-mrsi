@@ -164,4 +164,5 @@ cython_debug/
 # custom
 /data
 /checkpoints
+/result
 *.ipynb

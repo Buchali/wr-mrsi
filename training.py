@@ -65,7 +65,7 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
     accum_loss = 0
 
     autoencoder.train()
-    mse_loss = nn.MSELoss()
+    # mse_loss = nn.MSELoss()
 
     for epoch in tqdm(range(start_epoch, max_training_epochs)):
         t1 = time.time()
@@ -75,11 +75,16 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
             # time domain
             z_rec = autoencoder(z, verbose=False)
             # freq domain
-            z_f = torch.view_as_real(torch.fft.fftshift(torch.fft.fft(z, dim=-1), dim=-1))
-            z_rec_f = torch.view_as_real(torch.fft.fftshift(torch.fft.fft(z_rec, dim=-1), dim=-1))
+            z_f = torch.fft.fftshift(torch.fft.fft(z, dim=-1), dim=-1)
+            z_rec_f = torch.fft.fftshift(torch.fft.fft(z_rec, dim=-1), dim=-1)
+            
+            z_f_real = torch.view_as_real(z_f)
+            z_rec_f_real = torch.view_as_real(z_rec_f)
+
 
             # loss
-            loss = mse_loss(z_rec_f[:, wr_freq_range, :], z_f[:, wr_freq_range, :])
+            loss = F.mse_loss(z_rec_f_real[:, wr_freq_range, :], z_f_real[:, wr_freq_range, :])
+
             loss.backward()
 
             norm = torch.nn.utils.clip_grad_norm_(autoencoder.parameters(), 1.0) # stop great gradient shocks of high loss
@@ -93,7 +98,8 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
         t2 = time.time()
         # ----- reports ----
         with torch.no_grad():
-            if epoch % training_report_epoch == 0:
+            if epoch % training_report_epoch == 0:          
+
                 print(30 * '-')
                 print(f'epoch {epoch:>3} | loss: {accum_loss.item()/cur_step:.4f} | epoch time: {t2-t1:.2f}s | lr: {lr:.3e}')
 

@@ -31,6 +31,23 @@ def select_random_subjects(num_picks=2, num_subjects=12):
     return picked_subjects.tolist(), remaining_subjects.tolist()
 
 
+def remaining_subjects(sub_list=[1, 2], num_subjects=12):
+    numbers = np.arange(1, num_subjects + 1)
+    
+    # Ensure num_picks is valid
+    for num in sub_list:
+        if num > len(numbers):
+            raise ValueError("num_picks cannot be greater than the number of available subjects.")
+    
+    # Select random subjects
+    picked_subjects = np.array(sub_list)
+    
+    # Compute the remaining numbers
+    remaining_subjects = np.setdiff1d(numbers, picked_subjects)
+    
+    return remaining_subjects.tolist()
+
+
 class CustomDataset(Dataset):
     def __init__(self, data, transform=None):
         self.data = data
