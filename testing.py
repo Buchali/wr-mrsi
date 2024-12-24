@@ -8,6 +8,13 @@ from ppm_tools import ppm_to_point_index
 
 
 def test(autoencoder, test_dataloader, device='cpu'):
+    """
+    Test the autoencoder model on the test subjects.
+    Parameters:
+    autoencoder (nn.Module): The autoencoder model.
+    test_dataloader (torch.utils.data.DataLoader): The dataloader for the test dataset.
+    device (str): The device to use for testing.
+    """
     # params
     T = config_dict['T']
     p1 = config_dict['p1']
@@ -25,9 +32,9 @@ def test(autoencoder, test_dataloader, device='cpu'):
         autoencoder.eval()
         t1 = time.time()
         for z_test in test_dataloader:
-            
+            # forward pass
             z_test_rec = autoencoder(z_test, verbose=False)
-            
+            # fft
             z_test_f = torch.fft.fftshift(torch.fft.fft(z_test, dim=-1), dim=-1)
             z_test_rec_f = torch.fft.fftshift(torch.fft.fft(z_test_rec, dim=-1), dim=-1)
 

@@ -37,7 +37,10 @@ else:
 
 
 def cross_subject_train_test(config_dict, test_sub_list=None):
-    ## train test split
+    """
+    Performs cross-subject training and testing of an autoencoder model for MRSI water removal.
+    """
+    # train test split
     if not test_sub_list:
         test_sub_list, train_sub_list = select_random_subjects(num_picks=2, num_subjects=12)
     else:
@@ -50,7 +53,7 @@ def cross_subject_train_test(config_dict, test_sub_list=None):
     config_dict['test_sub_list'] = test_sub_list
     config_dict['train_sub_list'] = train_sub_list
 
-    ## train
+    # train
     # load and preprocess
     z_train_normalized = normalize(z_train)
     # plot_timefreq(z_normalized.T)
@@ -73,7 +76,7 @@ def cross_subject_train_test(config_dict, test_sub_list=None):
     ex_subs = '_ex' + '-'.join(map(str, test_sub_list)) + f"_head{config_dict['decoder_n_heads']}" # excluded subjects
     save_checkpoint(autoencoder, opt, config_dict, epoch=max_training_epochs, checkpoint_dir='checkpoints/final', ex=ex_subs) # final checkpoint
 
-    ## test
+    # test
     # load test data
     test_data = load_data(test_sub_list)
     z_test = test_data[:, :T].T
@@ -107,6 +110,9 @@ def cross_subject_train_test(config_dict, test_sub_list=None):
 
 
 def calculate_metrics_on_final_checkpoints(save_result=True):
+    """
+    Calculates metrics on final checkpoints for testing.
+    """
     ckpt_dir = Path('checkpoints/final')
     wpsr_list = []
     rr_list = []
@@ -114,7 +120,7 @@ def calculate_metrics_on_final_checkpoints(save_result=True):
         config = torch.load(checkpoint_path, weights_only=False)['config']
         autoencoder = AutoEncoder(config_dict=config, device=device)
         opt = autoencoder.configure_optimizer()
-    
+
         autoencoder, opt, config = load_checkpoint(autoencoder, opt, checkpoint_path, device=device)
         autoencoder.eval()
         test_sub_list = config['test_sub_list']
@@ -148,7 +154,7 @@ def calculate_metrics_on_final_checkpoints(save_result=True):
 
         wr_dl = z_test_res_f.real.mean(0).cpu()
         plot_freq(wr_dl)
-    
+
 
         print(f'wpsr score of {checkpoint_path.stem}: {wpsr_score:.2f}')
         print(f'rr error of {checkpoint_path.stem}: {rr_error:.4f}')
@@ -169,10 +175,10 @@ def calculate_metrics_on_final_checkpoints(save_result=True):
     rr = np.array(rr_list)
     print(f'WSR mean: {wpsr.mean():.2f} std:{wpsr.std():.2f}')
     print(f'WRE mean: {rr.mean():.2f} std:{rr.std():.2f}')
-    
+
 
 if __name__ == '__main__':
-    
+
     # import time
     # from config import config_dict
 
@@ -184,7 +190,7 @@ if __name__ == '__main__':
     #     t_start = time.time()
     #     cross_subject_train_test(config_dict=config_dict, test_sub_list=group)
     #     t_end = time.time()
-        
+
     #     with open(time_file_path, "a") as time_file:
     #         time_file.write(f"test group {group} processing time: {t_end - t_start:.2f} seconds. \n")
 

@@ -49,6 +49,18 @@ def ppm_to_point_index(ppm_values, T=config_dict['T'], t_step=config_dict['t_ste
 
 
 def point_to_ppm(T=config_dict['T'], trn_freq=config_dict['trn_freq'], t_step=config_dict['t_step'], center_freq=config_dict['center_freq']):
+    """
+    Convert point indexes to corresponding ppm values in an MRS signal.
+
+    Parameters:
+    T (int): Number of time points
+    trn_freq (float): Transmitter frequency
+    t_step (float): Time step between points
+    center_freq (float): Center frequency in ppm (default is 4.7)
+
+    Returns:
+    float or np.array: PPM value(s) corresponding to the input point index(es)
+    """
     freqs = np.fft.fftshift(np.fft.fftfreq(T, d=t_step), axes=0)
     ppm = freqs / trn_freq
     return center_freq - ppm

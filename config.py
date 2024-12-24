@@ -1,3 +1,5 @@
+# Configuration file for the MRSI Water Removal project
+
 config_dict = {
     'trn_freq': 298.08,
     't_step': 0.36e-3,

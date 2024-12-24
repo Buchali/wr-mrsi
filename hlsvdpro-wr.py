@@ -10,6 +10,9 @@ from pathlib import Path
 
 
 def watrem( data, dt, n, f):
+    """
+    Removes water peaks from MRSI data using the HLSVD method.
+    """
     npts = len(data)
     dwell = dt
     nsv_sought = n
@@ -41,6 +44,9 @@ def watrem( data, dt, n, f):
 
 
 def watrem_batch(dataset, dt, n, f):
+    """
+    Removes water peaks from a batch of MRSI data using the HLSVD method.
+    """
     dataset_ = np.zeros_like(dataset)
     for idx in tqdm(range(len(dataset[0])), desc="Water Removal Progress"):
         dataset_[:,idx] = watrem(dataset[:,idx], dt, n, f)
@@ -48,6 +54,9 @@ def watrem_batch(dataset, dt, n, f):
 
 
 def process_data(data_path):
+    """
+    Processes a single MRSI data file by removing water peaks using the HLSVD method.
+    """
     start_time = time.time()
     data_path = Path(data_path)
 
@@ -80,6 +89,7 @@ def process_data(data_path):
 
 
 if __name__ == '__main__':
+
     rng = range(1, 13)
     # Iterate through folders HC01_M01 to HC12_M01
     data_dir = Path('data')
@@ -88,4 +98,3 @@ if __name__ == '__main__':
         sub_file = Path(f"HC{sub_num:02d}_M01.npy")
         sub_path = data_dir / sub_file
         process_data(sub_path)
-    

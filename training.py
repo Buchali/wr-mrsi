@@ -11,6 +11,17 @@ from utils import load_checkpoint, plot_dual_freq, save_checkpoint
 
 
 def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkpoint=False, device='cpu'):
+    """
+    Train the autoencoder model.
+
+    Parameters:
+    autoencoder (nn.Module): The autoencoder model.
+    train_dataloader (torch.utils.data.DataLoader): The dataloader for the training dataset.
+    val_dataloader (torch.utils.data.DataLoader): The dataloader for the validation dataset.
+    config_dict (dict): The configuration dictionary.
+    use_checkpoint (bool): Whether to use a checkpoint for training.
+    device (str): The device to use for training.
+    """
     # params
     T = config_dict['T']
     p1 = config_dict['p1']
@@ -26,6 +37,9 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
 
     # scheduler
     def get_lr(step, max_lr=1e-2, min_lr=1e-4, warmup_epochs=5, max_epochs=100):
+        """
+        Cosine annealing learning rate scheduler.
+        """
         if step < warmup_epochs:
             return max_lr * (step + 1) / warmup_epochs
 
@@ -42,6 +56,9 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
         start_epoch = config['cur_epoch']
 
     def validate():
+        """
+        Validate the autoencoder model on the validation dataset.
+        """
         with torch.no_grad():
             autoencoder.eval()
             for z_val in val_dataloader:
@@ -77,10 +94,9 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
             # freq domain
             z_f = torch.fft.fftshift(torch.fft.fft(z, dim=-1), dim=-1)
             z_rec_f = torch.fft.fftshift(torch.fft.fft(z_rec, dim=-1), dim=-1)
-            
+
             z_f_real = torch.view_as_real(z_f)
             z_rec_f_real = torch.view_as_real(z_rec_f)
-
 
             # loss
             loss = F.mse_loss(z_rec_f_real[:, wr_freq_range, :], z_f_real[:, wr_freq_range, :])
@@ -98,7 +114,7 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
         t2 = time.time()
         # ----- reports ----
         with torch.no_grad():
-            if epoch % training_report_epoch == 0:          
+            if epoch % training_report_epoch == 0:
 
                 print(30 * '-')
                 print(f'epoch {epoch:>3} | loss: {accum_loss.item()/cur_step:.4f} | epoch time: {t2-t1:.2f}s | lr: {lr:.3e}')
@@ -106,7 +122,7 @@ def train(autoencoder, train_dataloader, val_dataloader, config_dict, use_checkp
                 accum_loss = 0
                 cur_step = 0
 
-                ## visualize training
+                # visualize training
                 # plot_dual_freq(z_f, z_rec_f)
 
                 # --- validate ---

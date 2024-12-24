@@ -7,6 +7,9 @@ from ppm_tools import ppm_to_frequency
 
 # ----- Encoder ----
 class ConvBlock(nn.Module):
+    """
+    A convolutional block for the encoder.
+    """
     def __init__(self, in_chann, out_chann):
         super().__init__()
         self.conv1 = self.make_conv_block(in_chann, out_chann, kernel_size=3, stride=1)
@@ -34,9 +37,12 @@ class ConvBlock(nn.Module):
 
 
 class Encoder(nn.Module):
+    """
+    The encoder for the autoencoder model.
+    """
     def __init__(self, config_dict, in_chann=2):
         super().__init__()
-        hidden_dim=config_dict['encoder_hidden_dim']
+        hidden_dim = config_dict['encoder_hidden_dim']
         self.enc_net = nn.Sequential(
             ConvBlock(in_chann, hidden_dim),
             ConvBlock(hidden_dim, hidden_dim),
@@ -56,6 +62,9 @@ class Encoder(nn.Module):
 
 # ----- Decoder ----
 class Decoder(nn.Module):
+    """
+    The decoder for the autoencoder model.
+    """
     def __init__(self, config_dict, device='cuda'):
         super().__init__()
         self.n_heads = config_dict['decoder_n_heads']  # number of decoder heads
@@ -68,20 +77,32 @@ class Decoder(nn.Module):
         self.device = device
 
     def vec_gauss(self, t, params):
+        """
+        Vectorized generation of Gaussian signals from the given parameters.
+        """
         a, f, ph, d = params.transpose(2, 0)
         sig = a * torch.exp(2 * torch.pi * f * t * 1j) * torch.exp(ph * 1j) * torch.exp(-1 * (d**2) * (t**2))
         return sig.transpose(2, 0)
 
     def vec_lorntz(self, t, params):
+        """
+        Vectorized generation of Lorentzian signals from the given parameters.
+        """
         a, f, ph, d = params.transpose(2, 0)
         sig = a * torch.exp(2 * torch.pi * f * t * 1j) * torch.exp(ph * 1j) * torch.exp(-1 * d * t)
         return sig.transpose(2, 0)
 
     def gen_time_points(self, length=512, t_step=0.00036, device='cuda'):
+        """
+        Generates time points for the signal.
+        """
         t = torch.arange(0, length) * t_step
         return t[:, None, None].to(device)
 
     def limit_params(self, latents):
+        """
+        Restricts the parameters of the signals.
+        """
         latents_copy = latents.clone()
         latents_copy[:, :, 0, :] = F.softplus(latents[:, :, 0, :])
         latents_copy[:, :, 1, :] = torch.clamp(latents[:, :, 1, :], self.f2, self.f1)
@@ -108,6 +129,9 @@ class Decoder(nn.Module):
 
 # ----- AutoEncoder -----
 class AutoEncoder(nn.Module):
+    """
+    The autoencoder model for MRSI water removal.
+    """
     def __init__(self, config_dict, device='cpu'):
         super().__init__()
         self.encoder = Encoder(config_dict=config_dict).to(device)
